@@ -28,14 +28,20 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
-export function ProductForm({ initialData, categories, onSubmit, onCancel }: ProductFormProps) {
+export function ProductForm({
+  initialData,
+  categories,
+  onSubmit,
+  onCancel,
+}: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",
-      price: initialData?.price || 0,
+      initialStock: initialData?.initialStock || 0,
+      availableStock: initialData?.availableStock || 0,
       categoryId: initialData?.categoryId || "",
       image: initialData?.image || "",
     },
@@ -84,10 +90,28 @@ export function ProductForm({ initialData, categories, onSubmit, onCancel }: Pro
         />
         <FormField
           control={form.control}
-          name="price"
+          name="initialStock"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Price</FormLabel>
+              <FormLabel>Initial Stock</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  disabled={isLoading}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="availableStock"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Available Stock</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -143,7 +167,12 @@ export function ProductForm({ initialData, categories, onSubmit, onCancel }: Pro
           )}
         />
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>

@@ -37,7 +37,7 @@ const ITEMS_PER_PAGE = 5;
 
 type SortConfig = {
   key: keyof Product | null;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 };
 
 /**
@@ -51,126 +51,131 @@ type SortConfig = {
 export default function Products() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
-  const [selectedProductForDetails, setSelectedProductForDetails] = useState<Product | null>(null);
+  const [selectedProductForDetails, setSelectedProductForDetails] =
+    useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: "asc",
+  });
   const queryClient = useQueryClient();
 
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('category_id', { ascending: true });
-      
+        .from("categories")
+        .select("*")
+        .order("category_id", { ascending: true });
+
       if (error) throw error;
-      
-      return data.map(category => ({
+
+      return data.map((category) => ({
         id: category.category_id.toString(),
         name: category.name,
-        image: category.image_url
+        image: category.image_url,
       }));
-    }
+    },
   });
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products')
-        .select('*, categories(*)')
-        .order('product_id', { ascending: true });
-      
+        .from("products")
+        .select("*, categories(*)")
+        .order("product_id", { ascending: true });
+
       if (error) throw error;
-      
-      return data.map(product => ({
+
+      return data.map((product) => ({
         id: product.product_id.toString(),
         name: product.name,
         description: product.description,
-        price: product.initial_stock,
+        initialStock: product.initial_stock,
         availableStock: product.available_stock,
         categoryId: product.category_id.toString(),
         categoryName: product.categories.name,
-        image: product.image_url
+        image: product.image_url,
       }));
-    }
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: Partial<Product>) => {
       const { data: result, error } = await supabase
-        .from('products')
+        .from("products")
         .insert([
           {
             name: data.name,
             description: data.description,
             image_url: data.image,
-            initial_stock: data.price,
-            available_stock: data.price,
-            category_id: parseInt(data.categoryId || '0')
-          }
+            initial_stock: data.initialStock,
+            available_stock: data.availableStock,
+            category_id: parseInt(data.categoryId || "0"),
+          },
         ])
         .select()
         .single();
-      
+
+      console.log(data);
       if (error) throw error;
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setIsDialogOpen(false);
       toast.success("Product created");
     },
     onError: () => {
       toast.error("Something went wrong");
-    }
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<Product>) => {
       const { error } = await supabase
-        .from('products')
+        .from("products")
         .update({
           name: data.name,
           description: data.description,
           image_url: data.image,
-          initial_stock: data.price,
-          available_stock: data.price,
-          category_id: parseInt(data.categoryId || '0')
+          initial_stock: data.initialStock,
+          available_stock: data.availableStock,
+          category_id: parseInt(data.categoryId || "0"),
         })
-        .eq('product_id', parseInt(selectedProduct?.id || '0'));
-      
+        .eq("product_id", parseInt(selectedProduct?.id || "0"));
+
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setIsDialogOpen(false);
       setSelectedProduct(undefined);
       toast.success("Product updated");
     },
     onError: () => {
       toast.error("Something went wrong");
-    }
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('products')
+        .from("products")
         .delete()
-        .eq('product_id', parseInt(id));
-      
+        .eq("product_id", parseInt(id));
+
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product deleted");
     },
     onError: () => {
       toast.error("Something went wrong");
-    }
+    },
   });
 
   const handleCreate = (data: Partial<Product>) => {
@@ -191,18 +196,23 @@ export default function Products() {
     setCurrentPage(page);
   };
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    categories.find(c => c.id === product.categoryId)?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      categories
+        .find((c) => c.id === product.categoryId)
+        ?.name.toLowerCase()
+        .includes(searchQuery.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  
+
   const handleSort = (key: keyof Product) => {
-    setSortConfig(current => ({
+    setSortConfig((current) => ({
       key,
-      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        current.key === key && current.direction === "asc" ? "desc" : "asc",
     }));
   };
 
@@ -212,16 +222,14 @@ export default function Products() {
     const aValue = a[sortConfig.key];
     const bValue = b[sortConfig.key];
 
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortConfig.direction === 'asc' 
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      return sortConfig.direction === "asc"
         ? aValue.localeCompare(bValue)
         : bValue.localeCompare(aValue);
     }
 
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortConfig.direction === 'asc'
-        ? aValue - bValue
-        : bValue - aValue;
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortConfig.direction === "asc" ? aValue - bValue : bValue - aValue;
     }
 
     return 0;
@@ -232,8 +240,14 @@ export default function Products() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const SortableHeader = ({ column, label }: { column: keyof Product, label: string }) => (
-    <TableHead 
+  const SortableHeader = ({
+    column,
+    label,
+  }: {
+    column: keyof Product;
+    label: string;
+  }) => (
+    <TableHead
       className="cursor-pointer hover:bg-gray-50"
       onClick={() => handleSort(column)}
     >
@@ -288,8 +302,14 @@ export default function Products() {
                   <TableRow>
                     <SortableHeader column="name" label="Name" />
                     <TableHead>Description</TableHead>
-                    <SortableHeader column="price" label="Initial Stock" />
-                    <SortableHeader column="availableStock" label="Available Stock" />
+                    <SortableHeader
+                      column="initialStock"
+                      label="Initial Stock"
+                    />
+                    <SortableHeader
+                      column="availableStock"
+                      label="Available Stock"
+                    />
                     <TableHead>Category</TableHead>
                     <TableHead>Image</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
@@ -297,17 +317,20 @@ export default function Products() {
                 </TableHeader>
                 <TableBody>
                   {paginatedProducts.map((product) => (
-                    <TableRow 
+                    <TableRow
                       key={product.id}
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => setSelectedProductForDetails(product)}
                     >
                       <TableCell>{product.name}</TableCell>
                       <TableCell>{product.description}</TableCell>
-                      <TableCell>{product.price}</TableCell>
+                      <TableCell>{product.initialStock}</TableCell>
                       <TableCell>{product.availableStock}</TableCell>
                       <TableCell>
-                        {categories.find((c) => c.id === product.categoryId)?.name}
+                        {
+                          categories.find((c) => c.id === product.categoryId)
+                            ?.name
+                        }
                       </TableCell>
                       <TableCell>
                         <img
@@ -342,31 +365,37 @@ export default function Products() {
                 </TableBody>
               </Table>
             </div>
-            
+
             {totalPages > 1 && (
               <div className="mt-4">
                 <Pagination>
                   <PaginationContent>
                     {currentPage > 1 && (
                       <PaginationItem>
-                        <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} />
+                        <PaginationPrevious
+                          onClick={() => handlePageChange(currentPage - 1)}
+                        />
                       </PaginationItem>
                     )}
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => handlePageChange(page)}
-                          isActive={currentPage === page}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => handlePageChange(page)}
+                            isActive={currentPage === page}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+
                     {currentPage < totalPages && (
                       <PaginationItem>
-                        <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+                        <PaginationNext
+                          onClick={() => handlePageChange(currentPage + 1)}
+                        />
                       </PaginationItem>
                     )}
                   </PaginationContent>
@@ -393,7 +422,7 @@ export default function Products() {
         </DialogContent>
       </Dialog>
 
-      <ProductDetails 
+      <ProductDetails
         product={selectedProductForDetails}
         onClose={() => setSelectedProductForDetails(null)}
       />
